@@ -48,10 +48,13 @@
 $active_group = 'default';
 $active_record = TRUE;
 
-//$db['default']['hostname'] = '192.168.1.110';
-$db['default']['hostname'] = 'erpmoneymobile.db.11569157.hostedresource.com';
-$db['default']['username'] = 'erpmoneymobile';
-$db['default']['password'] = 'MoneyMobile!2016';
+$db['default']['hostname'] = '127.0.0.1';
+$db['default']['username'] = 'root';
+$db['default']['password'] = 'toor';
+
+//$db['default']['hostname'] = 'erpmoneymobile.db.11569157.hostedresource.com';
+//$db['default']['username'] = 'erpmoneymobile';
+//$db['default']['password'] = 'MoneyMobile!2016';
 $db['default']['database'] = 'erpmoneymobile';
 $db['default']['port'] = '';
 $db['default']['dbdriver'] = 'mysqli';
