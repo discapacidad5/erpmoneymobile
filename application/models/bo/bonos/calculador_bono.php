@@ -46,7 +46,7 @@ class calculador_bono extends CI_Model
 		$bono=new $this->bono();
 		$bono->setUpBono($id_bono);
 			
-		if($this->isActivo($bono)&&$this->isVigentePorFecha($bono,$fechaCalculo)&&($this->isPagado($bono, $fechaCalculo)==false)){
+		if($this->isActivo($bono)&&$this->isVigentePorFecha($bono,$fechaCalculo)/*&&($this->isPagado($bono, $fechaCalculo)==false)*/){
 			$this->pagarComisionesBonoPorFecha($bono,$fechaCalculo);
 			return true;
 		}
@@ -109,7 +109,10 @@ class calculador_bono extends CI_Model
 		
 		foreach ($usuarios as $usuario){
 			$id_afiliado=$usuario->id_afiliado;
-			$this->darComisionRedDeAfiliado($bono,$id_historial_pago_bono,$id_afiliado,$fechaActual);
+                        ($id_afiliado>=1675) ?
+			$this->darComisionRedDeAfiliado(
+                                $bono,$id_historial_pago_bono,$id_afiliado,$fechaActual
+                                ) : '';
 		}
 		
 		return true;
