@@ -46,7 +46,7 @@ class calculador_bono extends CI_Model
 		$bono=new $this->bono();
 		$bono->setUpBono($id_bono);
 			
-		if($this->isActivo($bono)&&$this->isVigentePorFecha($bono,$fechaCalculo)/*&&($this->isPagado($bono, $fechaCalculo)==false)*/){
+		if($this->isActivo($bono)&&$this->isVigentePorFecha($bono,$fechaCalculo)&&($this->isPagado($bono, $fechaCalculo)==false)){
 			$this->pagarComisionesBonoPorFecha($bono,$fechaCalculo);
 			return true;
 		}
@@ -109,10 +109,10 @@ class calculador_bono extends CI_Model
 		
 		foreach ($usuarios as $usuario){
 			$id_afiliado=$usuario->id_afiliado;
-                        ($id_afiliado>=1675) ?
+                        //($id_afiliado>=1675) ?
 			$this->darComisionRedDeAfiliado(
                                 $bono,$id_historial_pago_bono,$id_afiliado,$fechaActual
-                                ) : '';
+                                );// : '';
 		}
 		
 		return true;
@@ -319,8 +319,8 @@ class calculador_bono extends CI_Model
 		
 		if($this->usuarioPuedeRecibirBono($id_bono,$id_usuario,$fecha)){
 		
-		$valor=0;
-		$valor=$bonoMoneyMobile->getTotalARecibirAfiliado($red,$id_usuario);
+		$valor=0;//echo $id_usuario."|";
+		$valor=$bonoMoneyMobile->getTotalARecibirAfiliado($red,$id_usuario);//echo " valor:".$valor."<br/>";
 		$repartidorComisionBono=new $this->repartidor_comision_bono();
 		
 			if($valor!=0)
@@ -475,7 +475,7 @@ class calculador_bono extends CI_Model
 		 */
 		switch ($tipoDeCondicion){
 			case 1:{
-				$valor=$usuario->getAfiliadosIntervaloDeTiempo($id_usuario,$red,"DIRECTOS",$tipoDeBusquedaEnLaRed,0,$fechaInicio,$fechaFin);
+				$valor=$usuario->getAfiliadosIntervaloDeTiempo($id_usuario,$red,"DIRECTOS",$tipoDeBusquedaEnLaRed,0,$fechaInicio,$fechaFin,1);
 				break;
 			}
 			case 2:{
@@ -582,7 +582,7 @@ class calculador_bono extends CI_Model
 	
 	public function getUsuariosRed($id_red) {
 		$q=$this->db->query("SELECT u.id as id_afiliado,u.username,u.created,a.debajo_de,a.directo,a.lado FROM users u,afiliar a
-								where (u.id=a.id_afiliado) and a.id_afiliado>2 and id_red=".$id_red);
+								where (u.id=a.id_afiliado) and a.id_afiliado>=2 and id_red=".$id_red);
 		$datosAfiliado=$q->result();
 		$this->setUsuariosRed($datosAfiliado);
 

@@ -22,11 +22,11 @@ class bono_mobile_money extends CI_Model
 		$this->setTotalQueSobraParaDar($totalQueSobra);
 	}
 	
-	function getAfiliadosPataDebil($id_red,$id_afiliado){
-
+	function getAfiliadosPataDebil($id_red,$id_afiliado,$val){
+                
 		$usuario=new $this->afiliado();
-		$totalAfiliados=$usuario->getAfiliadosIntervaloDeTiempo($id_afiliado,$id_red,"RED","DEB",0,"2016-01-01","2020-01-01");
-
+		$totalAfiliados=$usuario->getAfiliadosIntervaloDeTiempo($id_afiliado,$id_red,"RED","DEB",0,"2016-01-01","2020-01-01",$val);
+                /*echo $id_afiliado<>2 ? " " : $id_afiliado."-"." valor:".$totalAfiliados." ";*/
 		return $totalAfiliados;
 	}
 	
@@ -58,15 +58,17 @@ class bono_mobile_money extends CI_Model
 		$totalIgualaciones=0;
 		
 		foreach ($afiliadosRed as $id_afiliado) {
-			$totalIgualaciones=$totalIgualaciones+$this->getAfiliadosPataDebil($id_red,$id_afiliado);
+			$totalIgualaciones=$totalIgualaciones+$this->getAfiliadosPataDebil($id_red,$id_afiliado,1);
 		}
 		
 		return $totalIgualaciones;
 	}
 	
 	function getTotalPorIgualacion($id_red,$fecha_inicio,$fecha_fin){
-		$id_nodo_raiz=2;
-		return $this->getTotalARepartir($id_red, $id_nodo_raiz,$fecha_inicio,$fecha_fin)/$this->getTotalIgualaciones($id_red, $id_nodo_raiz);
+		$id_nodo_raiz=1;
+		$getTotalARepartir = $this->getTotalARepartir($id_red, $id_nodo_raiz,$fecha_inicio,$fecha_fin);
+		$getTotalIgualaciones = $this->getTotalIgualaciones($id_red, $id_nodo_raiz);
+		return ($getTotalIgualaciones==0) ? 0 : $getTotalARepartir/$getTotalIgualaciones;
 	}
 
 	function getTotalAfiliadosBono3Puntos($id_red,$totalRepartirPorIgualacion,$fecha_inicio,$fecha_fin){
@@ -80,7 +82,7 @@ class bono_mobile_money extends CI_Model
 			$totalPuntos=$usuario->getPuntosTotalesPersonalesIntervalosDeTiempo($id_afiliado,$id_red,"0","0",$fecha_inicio,$fecha_fin)[0]->total;
 			$totalPuntos=intval($totalPuntos);
 			if(($totalPuntos>=3)&&($totalPuntos<9)){
-				$totalAfiliados=$usuario->getAfiliadosIntervaloDeTiempo($id_afiliado,$id_red,"RED","DEB",0,"2016-01-01","2020-01-01");
+				$totalAfiliados=$usuario->getAfiliadosIntervaloDeTiempo($id_afiliado,$id_red,"RED","DEB",0,"2016-01-01","2020-01-01",1);
 				if($totalAfiliados>0){
 					$numero_de_igualaciones=$numero_de_igualaciones+$totalAfiliados;
 					$valorTotalPorIgualacion=$totalRepartirPorIgualacion*$numero_de_igualaciones;
@@ -106,7 +108,7 @@ class bono_mobile_money extends CI_Model
 		$totalDeIgualaciones=$this->getTotalIgualaciones($id_red,$id_nodo_raiz);
 		$totalIgualacionesRestantes=$totalDeIgualaciones-$datos["numero_igualaciones"];
 		
-		return $datos["valor"]/$totalIgualacionesRestantes;
+		return ($totalIgualacionesRestantes==0) ? 0 : $datos["valor"]/$totalIgualacionesRestantes;
 	}
 	
 	function getTotalARecibirAfiliado($id_red,$id_afiliado){
@@ -115,14 +117,14 @@ class bono_mobile_money extends CI_Model
 		$totalPuntos=intval($totalPuntos);
 		$totalARecibir=0;
 
-		$igualaciones=$this->getAfiliadosPataDebil($id_red,$id_afiliado);
+		$igualaciones=$this->getAfiliadosPataDebil($id_red,$id_afiliado,2);
 		
 		$totalPorIgualacion=$this->getTotalPorIgualacionParaDar();
 		$totalQueSobra=$this->getTotalQueSobraParaDar();
-	
-		if(($totalPuntos>=3)&&($totalPuntos<9)&&($igualaciones>0)){
+                //echo "igualaciones:".$igualaciones;//exit();
+		if(($totalPuntos>=6)&&($totalPuntos<9)&&($igualaciones>0)){
 			$totalARecibir=($totalPorIgualacion*$igualaciones)/7.5;
-		}else if(intval($totalPuntos)>=9&&($igualaciones>0)){
+		}else if(intval($totalPuntos)>=9&&($igualaciones>0)){//echo $totalPorIgualacion;exit();
 			$totalARecibir=($totalPorIgualacion*$igualaciones)+($totalQueSobra*$igualaciones);
 		}
 		

@@ -218,7 +218,7 @@ class afiliado extends CI_Model
 		return $this->getTotalAfiliados();
 	}
 	
-	function getAfiliadosIntervaloDeTiempo($id_afiliado,$red,$tipo,$tipoDeBusquedaEnLaRed,$nivel,$fechaInicio,$fechaFin){
+	function getAfiliadosIntervaloDeTiempo($id_afiliado,$red,$tipo,$tipoDeBusquedaEnLaRed,$nivel,$fechaInicio,$fechaFin,$val){
 			
 		if($tipoDeBusquedaEnLaRed=="EQU"){
 			$q=$this->db->query("SELECT count(*) as directos FROM users u,afiliar a
@@ -230,38 +230,86 @@ class afiliado extends CI_Model
 			return $this->getTotalAfiliados();
 			
 		}else if($tipoDeBusquedaEnLaRed=="DEB") {
+                        
+                    /*if($val==2){
+                        echo "aqui";
+                        
+                        $this->getPares ();
 
-			$totalPata1=0;
-			$totalPata2=0;
-			$this->setTotalAfiliados(0);
-				
-			$idAfiliadopata1=$this->getAfiliadoDirectoPorPosicion($id_afiliado,$red,0);
-
-			if($this->getDirectoAfiliado($idAfiliadopata1,$red)==$id_afiliado)
-				$totalPata1=1;
+                        
+                    } else {*/
+                        $totalPata1 = $this->getPata ( $id_afiliado, 0 ,$red,$tipo,$nivel);
+			$totalPata2 = $this->getPata ( $id_afiliado, 1 ,$red,$tipo,$nivel);
 			
-			$this->getCantidadDeAfiliadosDebajoDeHijo($idAfiliadopata1,$id_afiliado,$red,$tipo,$nivel);
-			
-			$totalPata1+=$this->getTotalAfiliados();
-			
-			$this->setTotalAfiliados(0);
-			
-			$idAfiliadopata2=$this->getAfiliadoDirectoPorPosicion($id_afiliado,$red,1);
-
-			if($this->getDirectoAfiliado($idAfiliadopata2,$red)==$id_afiliado)
-				$totalPata2=1;
-					
-			$this->getCantidadDeAfiliadosDebajoDeHijo($idAfiliadopata2,$id_afiliado,$red,$tipo,$nivel);
-			$totalPata2+=$this->getTotalAfiliados();
-			
-			
-			if($totalPata1>=$totalPata2)
+                        if($totalPata1>=$totalPata2)
 				return $totalPata2;
+                        
 			return $totalPata1;
+                    //}
+                       
 		}
 
 
 	}
+	
+
+	private function getPares() {
+            
+		$q=$this->db->query("select A.id_afiliado,A.directo,A.lado
+			from afiliar A
+			where A.debajo_de = ".$id_afiliado." and A.id_red = ".$red);
+
+		$datos= $q->result();
+                $i = false;   
+		foreach ($datos as $dato){
+                        
+		        if ($dato!=NULL){
+                            $i = $dato->lado;
+                            
+		        }
+		}
+                
+	}
+
+	
+
+	private function getPata($id_afiliado, $Pata ,$red,$tipo,$nivel) {
+            
+		$totalPata=0;
+                $this->setTotalAfiliados(0);
+			
+		$idAfiliadopata=$this->getAfiliadoDirectoPorPosicion($id_afiliado,$red,$Pata);
+
+                $has9Puntos = $this->isActivoRecompra($idAfiliadopata)>=9 ? true : false;
+                
+		if($this->getDirectoAfiliado($idAfiliadopata,$red)==$id_afiliado&&$has9Puntos)
+			$totalPata=1;
+		
+		$this->getCantidadDeAfiliadosDebajoDeHijo($idAfiliadopata,$id_afiliado,$red,$tipo,$nivel);
+		
+		$totalPata+=$this->getTotalAfiliados();
+		return $totalPata;
+	}
+	
+
+	private function isActivoRecompra($id) {
+		$q = $this->db->query('select 
+		                                    sum(m.puntos_comisionables*cvm.cantidad) puntos
+		                                from
+		                                    venta v,cross_venta_mercancia cvm, mercancia m
+		                                where
+		                                        m.id = cvm.id_mercancia and
+		                                        cvm.id_venta = v.id_venta and
+		                                        v.fecha between date_sub(now(), interval 1 month) and now() and
+		                                    id_user = '.$id);
+		
+		$q = $q->result();
+		
+		return $q ? $q[0]->puntos : 0;
+		
+	}
+
+
 	
 	function getCantidadDeAfiliadosDebajoDe($id_afiliado,$red,$tipo,$nivel){
 	
@@ -303,14 +351,13 @@ class afiliado extends CI_Model
 			if ($dato!=NULL){
 				
 				if($tipo=="DIRECTOS"){
-
-					if(($dato->directo==$id_padre))
+                                    if(($dato->directo==$id_padre))
 						$this->setTotalAfiliados($this->totalAfiliados+1);
+				}else{
+                                     $has9Puntos = $this->isActivoRecompra($dato->id_afiliado)>=9 ? true : false;
+					($has9Puntos) ? $this->setTotalAfiliados($this->totalAfiliados+1) : '';
 				}
-				else{
-					$this->setTotalAfiliados($this->totalAfiliados+1);
-				}
-					$this->getCantidadDeAfiliadosDebajoDeHijo($dato->id_afiliado,$id_padre,$red,$tipo,$nivel);
+				$this->getCantidadDeAfiliadosDebajoDeHijo($dato->id_afiliado,$id_padre,$red,$tipo,$nivel);
 			}
 		}
 	}

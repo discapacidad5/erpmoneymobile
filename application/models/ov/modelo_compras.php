@@ -1103,8 +1103,7 @@ where a.id_paquete = e.id_paquete and d.sku= a.id_paquete and d.estatus="ACT" an
 		
 	}*/
 	
-	function registrar_factura_datos_usuario($venta, $nombre,$apellido,$rfc,$codigoPostal,$pais,
-											 $estado,$municipio,$colonia,$calle,$correo,$compania,$celular){
+	function registrar_factura_datos_usuario($venta, $nombre,$apellido,$rfc,$codigoPostal,$pais,$estado,$municipio,$colonia,$calle,$correo,$compania,$celular){
 	
 	$dato_fact=array(
 				"id_venta"	=> $venta,

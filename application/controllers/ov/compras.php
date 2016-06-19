@@ -915,7 +915,7 @@ function index()
 	}
 	
 	private function registrarFacturaDatosDefaultAfiliado($id,$id_venta) {
-
+                
 		$datos_afiliado = $this->model_perfil_red->datos_perfil($id);
 		$direccion = $this->general->get_pais($id);
 		$telefonos = $this->model_perfil_red->telefonos($id);
@@ -923,7 +923,7 @@ function index()
 		foreach ($telefonos as $telefono){
 			$tel.="-Numero ".$telefono->tipo."[".$telefono->numero."]\n";
 		}
-			  
+			 
 		$this->modelo_compras->registrar_factura_datos_usuario
 			  						($id_venta,$datos_afiliado[0]->nombre,$datos_afiliado[0]->apellido,$datos_afiliado[0]->keyword,
 			  						 $direccion[0]->codigo_postal,$direccion[0]->pais,$direccion[0]->estado,$direccion[0]->municipio,
