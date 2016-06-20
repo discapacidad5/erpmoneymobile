@@ -58,7 +58,7 @@ class bono_mobile_money extends CI_Model
 		$totalIgualaciones=0;
 		
 		foreach ($afiliadosRed as $id_afiliado) {
-			$totalIgualaciones=$totalIgualaciones+$this->getAfiliadosPataDebil($id_red,$id_afiliado,1);
+			$totalIgualaciones+=$this->getAfiliadosPataDebil($id_red,$id_afiliado,2);
 		}
 		
 		return $totalIgualaciones;
@@ -67,7 +67,7 @@ class bono_mobile_money extends CI_Model
 	function getTotalPorIgualacion($id_red,$fecha_inicio,$fecha_fin){
 		$id_nodo_raiz=1;
 		$getTotalARepartir = $this->getTotalARepartir($id_red, $id_nodo_raiz,$fecha_inicio,$fecha_fin);
-		$getTotalIgualaciones = $this->getTotalIgualaciones($id_red, $id_nodo_raiz);
+		$getTotalIgualaciones = $this->getTotalIgualaciones($id_red, $id_nodo_raiz);//echo "totalR:".$getTotalIgualaciones;
 		return ($getTotalIgualaciones==0) ? 0 : $getTotalARepartir/$getTotalIgualaciones;
 	}
 
@@ -121,7 +121,7 @@ class bono_mobile_money extends CI_Model
 		
 		$totalPorIgualacion=$this->getTotalPorIgualacionParaDar();
 		$totalQueSobra=$this->getTotalQueSobraParaDar();
-                //echo "igualaciones:".$igualaciones;//exit();
+                //echo "igualaciones:".$totalPorIgualacion;//exit();
 		if(($totalPuntos>=6)&&($totalPuntos<9)&&($igualaciones>0)){
 			$totalARecibir=($totalPorIgualacion*$igualaciones)/7.5;
 		}else if(intval($totalPuntos)>=9&&($igualaciones>0)){//echo $totalPorIgualacion;exit();

@@ -231,13 +231,25 @@ class afiliado extends CI_Model
 			
 		}else if($tipoDeBusquedaEnLaRed=="DEB") {
                         
-                    /*if($val==2){
-                        echo "aqui";
+                    if($val==2){
+                        $pares = 0;
+                        $has9Puntos = $this->isActivoRecompra($id_afiliado)>=9 ? true : false;
+                        if($has9Puntos){
+                            //echo "afiliado:".$id_afiliado."<br/><br/>";
+                            $lados = array (
+                               // 0 => array(),
+                               // 1 => array()
+                            ); 
+                            $arbol = $this->getPares ($id_afiliado,$red,$lados,1);
+                            //var_dump($arbol);exit();
+                            $pares = $this->getNumeroPares ( $arbol,$id_afiliado );
+                            //exit();
+                            //echo "pares: ".$pares."<br/>";//exit();
+                          
+                        }  
+                        return $pares;                     
                         
-                        $this->getPares ();
-
-                        
-                    } else {*/
+                    } else {
                         $totalPata1 = $this->getPata ( $id_afiliado, 0 ,$red,$tipo,$nivel);
 			$totalPata2 = $this->getPata ( $id_afiliado, 1 ,$red,$tipo,$nivel);
 			
@@ -245,29 +257,121 @@ class afiliado extends CI_Model
 				return $totalPata2;
                         
 			return $totalPata1;
-                    //}
+                    }
                        
 		}
 
 
 	}
 	
+	private function getNumeroPares($arbolNivel,$id) {
+                    //$i=0;
+                    $pares=0;
+                    foreach ($arbolNivel as $nivel){
+                        $pares += /*($i>0) ? */$this->setVariacion ($nivel,$id)/* : 1*/;
+                        //foreach ($nivel as $dato){
+                        //    var_dump($dato);echo "<br/>";
+                        //}echo "<br/>";   
+                        //$i++;
+                        //echo $pares;echo "<br/>";
+                    }
+                    //exit();
+                    return $pares;
+	}
+	
+	private function setVariacion($nivel,$id) {
+		$count= count($nivel);
+                //var_dump($nivel);echo "<br/>";
+		//echo $count."<br/>"; 
+                $par=0;
+                
+		$var = $this->Varia ( $nivel, $count ,1);
+		$var2 = $this->Varia ( $nivel, $count ,2);
+		
+                $medial = $count%2==1 ? intval($count/2) : $count/2;
+                
+                for($i=0;$i<$medial;$i++){
+                    
+                    if($var[$i]["lado"]==$var2[$i]["lado"]){
+                        $v = $var[$i];
+                        $var[$i] = $var[$i+1];
+                        $var[$i+1] = $v;
+                    }
+                    //var_dump($var[$i]);echo "<br/>";var_dump($var2[$i]);echo "<br/><br/>";
+		}
+                
+                //echo $medial."<br/>"; 
+		for($i=0;$i<$medial;$i++){
+                    //var_dump($var[$i]);echo "<br/>";var_dump($var2[$i]);echo "<br/><br/>";
+                    $nivelVar = $var[$i]["nivel"];
+                    $padre = (($var[$i]["padre"]==$var2[$i]["padre"]&&$nivelVar>1) ? false : true);
+                    $repetido = (($var[$i]["lado"]==$var2[$i]["lado"]) ? false : true);
+                    $mismaPata = ($var[$i]["nivel"]>1) ? $this->mismaPata($id,$var[$i]["afiliado"],$var2[$i]["afiliado"]) : true;
+                    $validar = (
+                            $var[$i]["activo"]==1 && 
+                            $var2[$i]["activo"]==1 &&
+                            $mismaPata &&
+                            $repetido &&
+                            $padre
+                            ) 
+                    ? true : false;
+                    if($validar){
+                        $par++;
+                    }
+                    
+		}
+                return $par;
+	}
+	
 
-	private function getPares() {
+	private function Varia($nivel, $count ,$sentido) {
+		$var = array();
+                
+                    if($sentido==1){
+                        for($i=0;$i<$count;$i++){
+                            array_push($var, $nivel[$i]);
+                        }
+                    }else {
+                        for($i=$count-1;$i>=0;$i--){
+                            array_push($var, $nivel[$i]);
+                        }
+                    } 
+                    
+                return $var;
+	}
+
+
+
+	
+	private function getPares($id,$red,$lados,$nivel) {
             
 		$q=$this->db->query("select A.id_afiliado,A.directo,A.lado
 			from afiliar A
-			where A.debajo_de = ".$id_afiliado." and A.id_red = ".$red);
+			where A.debajo_de = ".$id." and A.id_red = ".$red." order by A.lado");
 
 		$datos= $q->result();
-                $i = false;   
-		foreach ($datos as $dato){
+                $count = count($datos);
+                
+                if($q){
+                    for ($i=0;$i<$count;$i++){
+                        $has9Puntos = $this->isActivoRecompra($datos[$i]->id_afiliado)>=9 ? true : false;
+                        $values = array(
+                            "afiliado" => $datos[$i]->id_afiliado,
+                            "padre" => $id,
+                            "nivel"=> $nivel,
+                            "lado"=> $datos[$i]->lado,
+                            "activo"=>$has9Puntos ? 1 : 0                           
+                        );                       
+                        /*($has9Puntos) ? */(!isset($lados[$nivel])) ? $lados[$nivel] = array($values) : array_push($lados[$nivel], $values);// : '';$i
+                        //echo ($has9Puntos) ? $i."|".$datos[$i]->lado."(".$datos[$i]->id_afiliado.")<br/>" : "";                        
+                    //}    
+                    //for ($i=0;$i<$count;$i++){
+                        $lados = $this->getPares($datos[$i]->id_afiliado, $red, $lados,$nivel+1);
                         
-		        if ($dato!=NULL){
-                            $i = $dato->lado;
-                            
-		        }
-		}
+                    } 
+                }
+                
+                return $lados;
                 
 	}
 
@@ -301,6 +405,7 @@ class afiliado extends CI_Model
 		                                        m.id = cvm.id_mercancia and
 		                                        cvm.id_venta = v.id_venta and
 		                                        v.fecha between date_sub(now(), interval 1 month) and now() and
+                                                        m.id_tipo_mercancia not in (4) and
 		                                    id_user = '.$id);
 		
 		$q = $q->result();
@@ -864,8 +969,25 @@ class afiliado extends CI_Model
 		$this->estado = $estado;
 		return $this;
 	}
-	
-	
-	
+
+    public function mismaPata($id,$x,$y) {
+        
+        $q=$this->db->query("select debajo_de,lado from afiliar where id_afiliado in (".$x.",".$y.") group by debajo_de");
+        
+        $q=$q->result();
+        
+        if($q){
+            $count=count($q);
+        }
+
+        if($count>1){
+            //echo $q[0]->debajo_de."|".$q[1]->debajo_de."<br/>";
+            return $this->mismaPata($id, $q[0]->debajo_de,$q[1]->debajo_de);
+        }else{
+            //echo $q[0]->debajo_de."<br/>";
+            return ($q[0]->debajo_de==$id) ? true : false;            
+        }
+        
+    }
 
 }
