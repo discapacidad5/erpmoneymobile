@@ -224,7 +224,7 @@ class calculador_bono extends CI_Model
 		
 		/* Repartir valor en $ hacia arriba o hacia abajo de la red */
 		
-		if(($verticalidad=="ASC")||($verticalidad=="DESC")){
+		if(($verticalidad=="ASC")||($verticalidad=="DESC")){                           
 			$this->repertirAscendenteODesendente ($id_bono,$id_bono_historial,$red,$condicion_red,$verticalidad,$id_usuario,$fecha,$nivel,$valor);
 	
 		}
@@ -258,7 +258,17 @@ class calculador_bono extends CI_Model
 
 	private function repertirAscendenteODesendente($id_bono,$id_bono_historial,$red,$condicion_red,$verticalidad,$id_usuario,$fecha,$nivel,$valor) {
 		if($nivel==0){
-			if($this->usuarioPuedeRecibirBono($id_bono, $id_usuario, $fecha)){
+                        if($id_bono==7){
+                            $diferencial=$this->validarDiferencial($id_usuario, $red, $condicion_red, 2);
+                            if($diferencial>=3){
+                                //echo $id_usuario."<br/>";//exit();
+                                $montos=$this->traerNiveles($id_usuario, $red, $condicion_red, 2,2);                                                               
+                                $valor=$montos;//echo $valor;
+                                $repartidorComisionBono=new $this->repartidor_comision_bono();
+				$repartidorComisionBono->repartirComisionBono($repartidorComisionBono->getIdTransaccionPagoBono(),$id_usuario,$id_bono,$id_bono_historial,$valor);
+                                
+                            }
+                        }else if($this->usuarioPuedeRecibirBono($id_bono, $id_usuario, $fecha)){
 				$repartidorComisionBono=new $this->repartidor_comision_bono();
 				$repartidorComisionBono->repartirComisionBono($repartidorComisionBono->getIdTransaccionPagoBono(),$id_usuario,$id_bono,$id_bono_historial,$valor);
 			}
@@ -290,9 +300,8 @@ class calculador_bono extends CI_Model
 	private function repartirComisionesBonoEnLaRed($id_bono,$id_bono_historial,$id_usuario,$red,$nivel,$valor,$condicionRed,$verticalidad) {
 		$repartidorComisionBono=new $this->repartidor_comision_bono();
 		$usuario=new $this->afiliado();
-		$usuario->getAfiliadosPorNivel($id_usuario,$red,$nivel,$condicionRed,1,$verticalidad);
+                $usuario->getAfiliadosPorNivel($id_usuario,$red,$nivel,$condicionRed,1,$verticalidad);                		
 		$afiliados=$usuario->getIdAfiliadosRed();
-		
 		foreach ($afiliados as $idAfiliado){
 			if($this->usuarioPuedeRecibirBono($id_bono, $idAfiliado, $this->getFechaCalculoBono())){
                                 //echo "<br/>"."id:".$id_usuario."|valor:".$valor."<br/>";
@@ -433,6 +442,7 @@ class calculador_bono extends CI_Model
 	}
 	
 	public function getFechaInicioPagoDeBono($frecuencia,$fechaActual){
+            //echo $frecuencia;
 		if($frecuencia=="SEM")
 			return $this->getInicioSemana($fechaActual);
 		else if($frecuencia=="QUI")
@@ -441,7 +451,9 @@ class calculador_bono extends CI_Model
 			return $this->getInicioMes($fechaActual);
 		else if($frecuencia=="ANO")
 			return $this->getInicioAno($fechaActual);
-		else if($frecuencia=="UNI")
+		else if($frecuencia=="SIN")
+			return $this->getInicioBimes($fechaActual);
+                else if($frecuencia=="UNI")
 			return "2016-01-01";
 	}
 	
@@ -454,6 +466,8 @@ class calculador_bono extends CI_Model
 			return $this->getFinMes($fechaActual);
 		else if($frecuencia=="ANO")
 			return $this->getFinAno($fechaActual);
+                else if($frecuencia=="SIN")
+			return $this->getFinBimes($fechaActual);
 		else if($frecuencia=="UNI")
 			return "2090-01-01";
 	}
@@ -635,7 +649,104 @@ class calculador_bono extends CI_Model
 		$this->isSetBonoRepartir = $isSetBonoRepartir;
 		return $this;
 	}
-	
 
-	
+    public function validarDiferencial($id_usuario, $red ,$tipo,$limit) {
+        $count=0;
+        $datos=$this->afiliado->getAfiliadosDebajoDeBaseDeDatos ($id_usuario, $red ,$tipo);
+        if($datos){
+            $limit--;
+            foreach ($datos as $dato){
+                //echo "nv:".$dato->id_afiliado."<br/>";
+                $count++;    
+                ($limit>0) ? $count+=$this->validarDiferencial($dato->id_afiliado, $red ,$tipo,$limit) : '';
+            } 
+        }
+        return $count;
+    }
+
+    public function traerNiveles($id_usuario, $red, $tipo, $inicio, $fin) {
+        $count=0;
+        $difs=array(
+            0 => 25,
+            1 => 15,
+            2 => 10,
+            3 => 0
+        );
+        $datos=$this->afiliado->getAfiliadosDebajoDeBaseDeDatos ($id_usuario, $red ,$tipo);
+        if($datos){
+            $inicio--;
+            foreach ($datos as $dato){                
+                if($inicio==0){      //echo "aqui";              
+                    $dif=$this->consultarDiferencial($dato->id_afiliado, $red, $tipo,0);
+                    $puntos = $this->getPuntosRed($dato->id_afiliado,$red,$tipo,1);
+                    $count+=($difs[$dif]*$puntos);     
+                    //echo "NV:".$inicio."|".$dato->id_afiliado."|".$difs[$dif]."<br/>";  
+                }     
+                $count2 = ($fin>0) ? $this->traerNiveles($dato->id_afiliado, $red ,$tipo,1,$fin-1) : 0;
+                //echo $count."<br/>";
+                $count+=$count2;
+            } 
+        }
+        return $count;
+    }
+    
+    public function traerNiveles2($id_usuario, $red, $tipo, $inicio, $fin,$count) {
+        $datos=$this->afiliado->getAfiliadosDebajoDeBaseDeDatos ($id_usuario, $red ,$tipo);
+        
+        if($datos){
+            $inicio--;
+            foreach ($datos as $dato){                
+                if($inicio==0){  
+                    //echo "nv:".$inicio."|".$dato->id_afiliado."<br/>";
+                     $count[$dato->id_afiliado] = $dato->id_afiliado;            
+                }
+                $count2 = $this->traerNiveles2($dato->id_afiliado, $red ,$tipo,1,$fin-1,$count);                
+                ($fin>0) ? $count = $count2 : '';
+            }// var_dump($count);exit();
+        }
+        return $count;
+    }
+
+    public function consultarDiferencial($id_usuario, $red, $tipo,$indice) {
+        //echo "id: ".$id_usuario;
+        $diferencial=$this->validarDiferencial($id_usuario, $red, $tipo, 2);
+        if($diferencial>=3){ 
+            ($indice<3) ? $indice++ : '';//echo "aqui"."<br/>";
+            $datos=$this->traerNiveles2($id_usuario, $red, $tipo, 2, 2,array());
+            if($datos){
+                foreach ($datos as $key => $value){
+                    $indice = $this->consultarDiferencial($value, $red, $tipo,$indice);
+                }                
+            }
+        }
+        
+        return $indice;
+    }
+
+    public function getPuntosRed($id,$red,$tipo,$minimo) {
+       $count=0; 
+       $q=$this->afiliado->getAfiliadosDebajoDeBaseDeDatos ($id, $red ,$tipo);
+       
+       if($q){
+           foreach ($q as $dato){
+               $id = $dato->id_afiliado;
+               $has=$this->afiliado->isActivoRecompra($id);
+               ($has>=$minimo) ? $count++ : '';
+               //echo $id."<br/>";
+               $count += $this->getPuntosRed($id,$red,$tipo,$minimo);
+           }           
+       }
+       
+       return $count;
+    }
+
+    public function getInicioBimes($date) {
+        $dateAux = date('Y-m-d', strtotime("-2 months"));
+	return $dateAux;
+    }
+
+    public function getFinBimes($date) {
+	return date('Y-m-t',strtotime($date));
+    }
+
 }

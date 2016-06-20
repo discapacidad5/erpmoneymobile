@@ -128,13 +128,13 @@ class titulo extends CI_Model
 	}
 	
 	function getPuntosRedFrecuencia($id_afiliado,$frecuencia,$condicion_red,$fechaActual){
-	
+                //echo $condicion_red."<br/>";
 		$afiliado=new $this->afiliado;
 		$calculador_bono=new $this->calculador_bono;
 	
 		$fechaInicio=$calculador_bono->getFechaInicioPagoDeBono($frecuencia,$fechaActual);
 		$fechaFin=$calculador_bono->getFechaFinPagoDeBono($frecuencia,$fechaActual);
-	
+                
 		$totalPuntosPersonales=0;
 		$cualquiera="0";
 	
@@ -142,9 +142,7 @@ class titulo extends CI_Model
 		$redes= $q->result();
 	
 		foreach ($redes as $red){
-	
-			$totalPuntosPersonales=$totalPuntosPersonales+$afiliado->getVentasTodaLaRed($id_afiliado,$red->id,"RED",$condicion_red,$red->profundidad,$fechaInicio,$fechaFin,$cualquiera,$cualquiera,"PUNTOS");
-			
+			$totalPuntosPersonales+=$afiliado->getVentasTodaLaRed($id_afiliado,$red->id,"RED",$condicion_red,$red->profundidad,$fechaInicio,$fechaFin,$cualquiera,$cualquiera,"PUNTOS");			
 		}
 
 		return $totalPuntosPersonales ;
@@ -189,29 +187,33 @@ class titulo extends CI_Model
 		
 		$valorTituloSiguiente=$titulo_siguiente[0]->valor;
 		$valorTituloAfiliado=$this->getTipoDeValorTitulo($id_afiliado,$titulo[0]->frecuencia,$titulo[0]->condicion_red_afilacion, $fechaActual, $titulo[0]->tipo);
-
+                //exit();
 		$valorTituloAfiliado=(($valorTituloAfiliado*$titulo[0]->porcentaje)/100);
 		
+                $Afiliados = $this->getAfiliados($id_afiliado,16,'RED');
+                //echo $titulo[0]->ganancia."|".$Afiliados;
+                $hasAfiliados = ($titulo[0]->ganancia<=$Afiliados) ? true : false;
+                        
 		if($valorTitulo>$valorTituloAfiliado)
 			return 0;
 
-		if(($valorTitulo<=$valorTituloAfiliado)&&($valorTituloAfiliado<$valorTituloSiguiente))
+		if(($valorTitulo<=$valorTituloAfiliado)&&($valorTituloAfiliado<$valorTituloSiguiente)&&($hasAfiliados))
 			return $idValorTitulo;
 		
 		return $this->getTituloAlcanzadoAfiliado($id_afiliado,($orden+1),$fechaActual);
 	}
 	
 	function getTipoDeValorTitulo($id_afiliado, $frecuencia, $condicion_red, $fechaActual,$tipoValor){
-		
-		if($tipoValor=="PUNTOSR")
-			return $this->getPuntosRedFrecuencia($id_afiliado, $frecuencia, $condicion_red, $fechaActual);
-		else if($tipoValor=="PUNTOSP")
-			return $this->getPuntosPersonalesFrecuencia($id_afiliado, $frecuencia, $fechaActual);
-		else if($tipoValor=="COMPRASR")
-			return $this->getComprasRedFrecuencia($id_afiliado,$frecuencia,$condicion_red,$fechaActual);
-		else if($tipoValor=="COMPRASP")
-			return $this->getComprasPersonalesFrecuencia($id_afiliado, $frecuencia, $fechaActual);
-	}
+		//echo /*$condicion_red."|".*/$fechaActual."|".$tipoValor.">";
+                    if ($tipoValor == "PUNTOSR") {
+                        return $this->getPuntosRedFrecuencia($id_afiliado, $frecuencia, $condicion_red, $fechaActual);
+                    } else if ($tipoValor == "PUNTOSP")
+                        return $this->getPuntosPersonalesFrecuencia($id_afiliado, $frecuencia, $fechaActual);
+                    else if ($tipoValor == "COMPRASR")
+                        return $this->getComprasRedFrecuencia($id_afiliado, $frecuencia, $condicion_red, $fechaActual);
+                    else if ($tipoValor == "COMPRASP")
+                        return $this->getComprasPersonalesFrecuencia($id_afiliado, $frecuencia, $fechaActual);
+                }
 
 	function getTituloPorOrden($orden){
 		$q=$this->db->query("SELECT *  FROM cat_titulo where orden=".$orden);
@@ -310,6 +312,31 @@ class titulo extends CI_Model
 		$this->ganancia = $ganancia;
 		return $this;
 	}
+
+    public function getAfiliados($id_afiliado, $red, $tipo) {
+        $count=0;
+        if($tipo=='DIRECTOS'){
+            $q=$this->db->query("select count(*) as directos
+			from afiliar A
+			where A.directo = ".$id_afiliado." and A.id_red = ".$red);
+            $datos= $q->result();
+	}else {
+            $q=$this->db->query("select A.id_afiliado
+                        from afiliar A
+                        where A.debajo_de = ".$id_afiliado." and A.id_red = ".$red);
+
+            $datos= $q->result();
+        }	
 	
-	
+	foreach ($datos as $dato){
+            if ($dato!=NULL){
+                $count++;
+                $count+=$this->getAfiliados($dato->id_afiliado,$red,$tipo);
+            }
+        }
+        
+        return $count;
+        
+    }
+
 }

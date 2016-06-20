@@ -508,7 +508,7 @@ class afiliado extends CI_Model
 	}
 	
 	function getAfiliadosArribaDeBaseDeDatos($id_afiliado, $red ,$tipo) {
-	
+            
 		if($tipo=="RED"){
 				
 			$q=$this->db->query("select A.debajo_de as id_afiliado
@@ -517,7 +517,7 @@ class afiliado extends CI_Model
 	
 			$datos= $q->result();
 
-		}else if($tipo=="DIRECTOS"){
+		}else if($tipo=="DIRECTOS"){    //echo "aqui<br/>";
 			$q=$this->db->query("select A.directo as id_afiliado
 								from afiliar A
 								where A.id_afiliado = ".$id_afiliado." and A.id_red = ".$red);
@@ -547,7 +547,7 @@ class afiliado extends CI_Model
 	}
 	
 	function getComprasPersonalesIntervaloDeTiempo($id_afiliado,$id_red,$fechaInicio,$fechaFin,$id_tipo_mercancia,$id_mercancia,$datosVenta){
-
+                //echo $id_afiliado."|".$id_red."|".$fechaInicio."|".$fechaFin;
 		$datos=array();
 
 		if($datosVenta=="COSTO")
@@ -573,7 +573,8 @@ class afiliado extends CI_Model
 			$q=$this->db->query("SELECT sum(puntos_comisionables) as total FROM venta v,cross_venta_mercancia cvm,items i
 							 where (v.id_venta=cvm.id_venta)
 							 and  (i.id=cvm.id_mercancia)
-							 and(v.id_user=".$id_afiliado.")
+                                                         and i.id_tipo_mercancia not in (4)
+							 and (v.id_user=".$id_afiliado.")
 							 and (i.red=".$id_red.") and v.id_estatus = 'ACT' and (v.fecha BETWEEN '".$fechaInicio."' AND '".$fechaFin."')");
 			return $q->result();
 		}else if($id_mercancia!==$cualquiera&&$id_tipo_mercancia===$cualquiera){
@@ -670,7 +671,7 @@ class afiliado extends CI_Model
 	}
 	
 	function getVentasTodaLaRed($id_afiliado,$red,$tipo,$condicionRed,$nivel,$fechaInicio,$fechaFin,$id_tipo_mercancia,$id_mercancia,$datoVenta){
-
+                //echo $id_afiliado."|".$condicionRed."<br/>";//exit();
 		if($condicionRed=="EQU"){
 			$limite=$nivel;
 			return $this->getVentasTodaLaRedEquilibrada( $id_afiliado, $red,$tipo,$nivel,$fechaInicio,$fechaFin,$limite,$id_tipo_mercancia,$id_mercancia,$datoVenta);
@@ -682,7 +683,7 @@ class afiliado extends CI_Model
 	}
 	
 	function getAfiliadosPorNivel($id_afiliado,$red,$nivel,$tipo,$limite,$verticalidad){
-
+                        
 			$datos=$this->getAfiliadosPorVerticalidad ( $id_afiliado, $red ,$tipo,$verticalidad );
 
 			foreach ($datos as $dato){
@@ -711,9 +712,9 @@ class afiliado extends CI_Model
 	}
 	
 	private function getVentasTodaLaRedPataDebil($id_afiliado, $red,$tipo,$nivel,$fechaInicio,$fechaFin,$id_tipo_mercancia,$id_mercancia,$datoVenta) {
-
+                
 		$patas = $this->getPatasAfiliadoPorRedEnIntervaloDeTiempo ( $id_afiliado,$red,$nivel,$fechaInicio,$fechaFin,$id_tipo_mercancia,$id_mercancia,$datoVenta );
-		
+		//var_dump($patas);
 		$esUnBonoBinario=$this->getTipoDeBono();
 
 		if(($esUnBonoBinario=="SI")&&($this->getEstado()=="DAR")){
@@ -778,9 +779,10 @@ class afiliado extends CI_Model
 			$posicionEnRed=$i-1;
 
 			$idAfiliadopata=$this->getAfiliadoDirectoPorPosicion($id_afiliado,$red,$posicionEnRed);
-			$totalPata=$this->getVentasTodaLaRedPata($idAfiliadopata, $red ,"RED","DEB",$nivel,$fechaInicio,$fechaFin,$id_tipo_mercancia,$id_mercancia,$datoVenta);
+			//echo "id: ".$idAfiliadopata."<br/>";
+                        $totalPata=$this->getVentasTodaLaRedPata($idAfiliadopata, $red ,"RED","DEB",$nivel,$fechaInicio,$fechaFin,$id_tipo_mercancia,$id_mercancia,$datoVenta);
 			$totalPata+=$this->getComprasPersonalesIntervaloDeTiempo($idAfiliadopata, $red,$fechaInicio,$fechaFin,$id_tipo_mercancia,$id_mercancia,$datoVenta);
-
+                       
 				$remanente=$this->getPatasPuntosRemanentesAfiliadoBonoPorPata($this->getIdBono(), $id_afiliado,$i);
 				$pata = array(
 						'id_pata' => $i,
@@ -797,8 +799,9 @@ class afiliado extends CI_Model
 		
 		$this->getAfiliadosDebajoDe($id_afiliado,$red,$tipo,$nivel,$limite);
 	
-		foreach ($this->getIdAfiliadosRed() as $id_afiliado){
+		foreach ($this->getIdAfiliadosRed() as $id_afiliado){                         
 			$total+=$this->getComprasPersonalesIntervaloDeTiempo($id_afiliado, $red,$fechaInicio,$fechaFin,$id_tipo_mercancia,$id_mercancia,$datosVenta);
+                        //echo "__id: ".$id_afiliado."|total: ".$total."<br/>";   
 		}
 		return $total;
 	}
