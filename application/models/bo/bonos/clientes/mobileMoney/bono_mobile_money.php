@@ -41,10 +41,11 @@ class bono_mobile_money extends CI_Model
 			$totalPuntos=$usuario->getPuntosTotalesPersonalesIntervalosDeTiempo($id_afiliado,$id_red,"0","0",$fecha_inicio,$fecha_fin)[0]->total;
 			$totalPuntos=intval($totalPuntos);
 			$totalDePuntos=$totalDePuntos+$totalPuntos;
+                        $has = $usuario->isActivoRecompra($id_afiliado);
 			if(($totalPuntos>=3)&&($totalPuntos<9)){
 				$totalARepartir=$totalARepartir+40;
-			}else if(intval($totalPuntos)>=9){
-				$totalARepartir=$totalARepartir+300;
+			}else if(intval($totalPuntos)>=9){                                
+				$totalARepartir+= ($has >= 9) ? 300 : 0;
 			}
 		} 
 

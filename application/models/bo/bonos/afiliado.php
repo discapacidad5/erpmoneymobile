@@ -224,7 +224,7 @@ class afiliado extends CI_Model
 			$q=$this->db->query("SELECT count(*) as directos FROM users u,afiliar a
 								where u.id=a.id_afiliado and a.directo = ".$id_afiliado." and a.id_red = ".$red." and (u.created BETWEEN '".$fechaInicio."' AND '".$fechaFin."')");
 			$datos= $q->result();
-
+                        //echo "total:".$datos[0]->directos;
 			$this->setTotalAfiliados($datos[0]->directos);
 
 			return $this->getTotalAfiliados();
@@ -396,7 +396,7 @@ class afiliado extends CI_Model
 	}
 	
 
-	private function isActivoRecompra($id) {
+	function isActivoRecompra($id) {
 		$q = $this->db->query('select 
 		                                    sum(m.puntos_comisionables*cvm.cantidad) puntos
 		                                from
@@ -405,12 +405,12 @@ class afiliado extends CI_Model
 		                                        m.id = cvm.id_mercancia and
 		                                        cvm.id_venta = v.id_venta and
 		                                        v.fecha between date_sub(now(), interval 1 month) and now() and
-                                                        m.id_tipo_mercancia not in (4) and
+                                                         m.id_tipo_mercancia not in (4) and
 		                                    id_user = '.$id);
 		
 		$q = $q->result();
-		
-		return $q ? $q[0]->puntos : 0;
+		//echo "//".$id."|".(isset($q) ? $q[0]->puntos : 0)."//<br/>";
+		return isset($q) ? $q[0]->puntos : 0;
 		
 	}
 
